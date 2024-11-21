@@ -4,7 +4,9 @@ struct WatchlistView: View {
     @EnvironmentObject var webSocketManager: WebSocketManager
     @State private var gainPeriod: GainPeriod = .daily
     @State private var totalMoney: Double = 10000.0 // Example total balance
-    
+    @State private var isAddingStock = false
+    @State private var newTicker = ""
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -34,33 +36,65 @@ struct WatchlistView: View {
                                 StockRowView(ticker: ticker, latestData: latestData, gainPeriod: gainPeriod)
                             }
                             .listRowBackground(Color.clear)
+                        } else {
+                            // Handle case where there's no data yet
+                            Text("Loading \(ticker)...")
                         }
                     }
                 }
                 .listStyle(PlainListStyle())
                 
-                // Add More Stocks Button
-                Button(action: {
-                    // Present an alert or modal to add a new ticker
-                    // For example purposes, we'll add a hardcoded ticker
-                    let newTicker = "MSFT"
-                    if !webSocketManager.tickers.contains(newTicker) {
-                        webSocketManager.tickers.append(newTicker)
-                        webSocketManager.sendTickers()
-                    }
-                }) {
-                    Text("Add More Stocks")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                // Add More Stocks Section
+                ZStack {
+                    // Background
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue)
+                        .frame(height: 50)
                         .padding(.horizontal)
                         .padding(.bottom, 10)
+                    
+                    if isAddingStock {
+                        // TextField styled to blend with the button
+                        TextField("Enter Ticker", text: $newTicker, onCommit: {
+                            addNewTicker()
+                        })
+                        .foregroundColor(.white)
+                        .padding(.horizontal)
+                        .frame(height: 50)
+                        .autocapitalization(.allCharacters)
+                        .disableAutocorrection(true)
+                    } else {
+                        // Button Text
+                        Text("Add More Stocks")
+                            .foregroundColor(.white)
+                            .onTapGesture {
+                                isAddingStock = true
+                            }
+                    }
+                }
+                .contentShape(Rectangle()) // Makes the entire area tappable
+                .onTapGesture {
+                    if !isAddingStock {
+                        isAddingStock = true
+                    }
                 }
             }
             .navigationBarHidden(true)
             .background(Color(.systemGroupedBackground).edgesIgnoringSafeArea(.all))
         }
+    }
+    
+    // Helper Functions
+    func addNewTicker() {
+        let trimmedTicker = newTicker.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !trimmedTicker.isEmpty else { return }
+        if !webSocketManager.tickers.contains(trimmedTicker) {
+            webSocketManager.tickers.append(trimmedTicker)
+            webSocketManager.sendTickers()
+        }
+        newTicker = ""
+        isAddingStock = false
+        // Dismiss the keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }

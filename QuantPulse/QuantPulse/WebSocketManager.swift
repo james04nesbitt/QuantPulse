@@ -2,12 +2,11 @@ import Foundation
 
 class WebSocketManager: ObservableObject {
     private var webSocketTask: URLSessionWebSocketTask?
-    @Published var stockData: [String: [StockHistory]] = [:] // Ticker: StockHistory
+    @Published var stockData: [String: [StockHistory]] = [:]
     var tickers: [String] = []
     var period: String = "1mo"
     
     init() {
-        connect()
     }
     
     func connect() {
@@ -24,6 +23,11 @@ class WebSocketManager: ObservableObject {
     }
     
     func sendTickers() {
+        // Clear data for removed tickers
+        DispatchQueue.main.async {
+            self.stockData = self.stockData.filter { self.tickers.contains($0.key) }
+        }
+        
         let message: [String: Any] = ["tickers": tickers, "period": period]
         if let data = try? JSONSerialization.data(withJSONObject: message, options: []) {
             let text = String(data: data, encoding: .utf8) ?? ""
@@ -62,7 +66,10 @@ class WebSocketManager: ObservableObject {
             do {
                 let update = try JSONDecoder().decode(UpdateMessage.self, from: data)
                 DispatchQueue.main.async {
-                    self.stockData = update.data
+                    // Merge the new data with existing stockData
+                    for (ticker, histories) in update.data {
+                        self.stockData[ticker] = histories
+                    }
                 }
             } catch {
                 print("Decoding error: \(error)")

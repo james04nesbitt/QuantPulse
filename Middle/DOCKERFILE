@@ -1,7 +1,10 @@
-# Dockerfile for FastAPI Backend
+# Dockerfile for FastAPI Backend with ML and Option Chain Integration
 
 # Use the official Python image as the base
 FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y build-essential libssl-dev libffi-dev python3-dev
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -10,7 +13,7 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
-# Install dependencies
+# Copy requirements.txt and install dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt

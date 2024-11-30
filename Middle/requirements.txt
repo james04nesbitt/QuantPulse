@@ -2,3 +2,6 @@ fastapi
 uvicorn
 google-cloud-pubsub
 yfinance
+tensorflow
+pandas
+numpy
